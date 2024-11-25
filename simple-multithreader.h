@@ -29,6 +29,8 @@ typedef struct {
     std::function<void(int, int)> lambda;
 } thread_args_2D;
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 void* thread_func(void* ptr){
 	thread_args* t = (thread_args*) ptr;
 
@@ -62,27 +64,23 @@ void parallel_for(int low, int high, std::function<void(int)> &&lambda, int numT
 
 	for (int t = 0; t < numThreads; t++) {
         int start = low + t * chunk;
-        int end = std::min(start + chunk, high);
+        int end = min(start + chunk, high);
 
-        if (start >= high) break; // No work for this thread
+        if (start >= high) break;
 
-        // Initialize arguments
         arguments[t].low = start;
         arguments[t].high = end;
         arguments[t].lambda = lambda;
 
-        // Create thread
         pthread_create(&threads[t], NULL, thread_func, &arguments[t]);
     }
 
-	 // Join all threads
     for (int t = 0; t < numThreads; t++) {
         pthread_join(threads[t], NULL);
     }
 
 	clock_t end = clock();
 
-    // Calculate elapsed time in seconds
     double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
 	printf("Total execution time: %f seconds\n", time_taken);
 
@@ -95,34 +93,30 @@ void parallel_for(int low1, int high1, int low2, int high2,std::function<void(in
 	pthread_t threads[numThreads];
     thread_args_2D arguments[numThreads];
 
-    int range1 = high1 - low1; // Range of the outer loop
-    int chunk1 = (range1 + numThreads - 1) / numThreads; // Divide outer loop into chunks
+    int range1 = high1 - low1;
+    int chunk1 = (range1 + numThreads - 1) / numThreads;
 
     for (int t = 0; t < numThreads; t++) {
         int start1 = low1 + t * chunk1;
-        int end1 = std::min(start1 + chunk1, high1);
+        int end1 = min(start1 + chunk1, high1);
 
-        if (start1 >= high1) break; // No work for this thread
+        if (start1 >= high1) break;
 
-        // Initialize thread arguments
         arguments[t].low1 = start1;
         arguments[t].high1 = end1;
-        arguments[t].low2 = low2; // Inner loop range remains the same
+        arguments[t].low2 = low2;
         arguments[t].high2 = high2;
         arguments[t].lambda = lambda;
 
-        // Create thread
         pthread_create(&threads[t], NULL, thread_func_2d, &arguments[t]);
     }
 
-    // Join threads
     for (int t = 0; t < numThreads; t++) {
         pthread_join(threads[t], NULL);
     }
 
 	clock_t end = clock();
 
-    // Calculate elapsed time in seconds
     double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
 	printf("Total execution time: %f seconds\n", time_taken);
 
